@@ -60,10 +60,15 @@ func dotAtPoint(_ center: CGPoint, radius: CGFloat) -> Path {
     return Path(ellipseIn: circleRect)
 }
 
+
+
 struct ContentView: View {
     @State private var item = Item()
     @EnvironmentObject var appState: AppState
     @GestureState private var dragOffset: CGSize = .zero
+    @State private var velocity: CGSize = .zero
+    @State private var inertiaTimer: Timer? = nil
+    @State var canvasCenter: CGPoint = .zero
     
     var body: some View {
         ZStack {
@@ -73,18 +78,35 @@ struct ContentView: View {
                         state = value.translation
                     }
                     .onEnded { value in
+                        // Step 1: update position
                         item.position.x += value.translation.width
                         item.position.y += value.translation.height
+
+                        // Step 2: compute velocity (pts/sec)
+                        let dragDuration = value.time.timeIntervalSince(value.time.advanced(by: -0.1))
+                        let vx = value.translation.width / dragDuration
+                        let vy = value.translation.height / dragDuration
+                        self.velocity = CGSize(width: vx, height: vy)
+
+                        // Step 3: start inertia animation
+                        startInertia()
                     }
                 
-                Canvas { ctx, size in
-                    var previewItem = item
-                    previewItem.position.x += dragOffset.width
-                    previewItem.position.y += dragOffset.height
-                    previewItem.draw(in: ctx, debug: appState.debug)
-                }.gesture (dragGesture)
-                
- 
+                GeometryReader { geo in
+                    let canvasSize = geo.size
+                    let center = CGPoint(x: canvasSize.width / 2, y: canvasSize.height / 2)
+
+                    Canvas { ctx, size in
+                        var previewItem = item
+                        previewItem.position.x += dragOffset.width
+                        previewItem.position.y += dragOffset.height
+                        previewItem.draw(in: ctx, debug: appState.debug)
+                    }
+                    .gesture(dragGesture)
+                    .onChange(of: geo.size) {
+                        canvasCenter = center
+                    }
+                }
             }
             VStack {
                 HStack {
@@ -103,9 +125,37 @@ struct ContentView: View {
                     }) {
                         Label("Rotate Right", systemImage: "rotate.right")
                     }
+                    Button(action: {
+                        item.position = CGPoint(
+                            x: canvasCenter.x - item.width / 2,
+                            y: canvasCenter.y - item.height / 2
+                        )
+                    }) {
+                        Label("Center", systemImage: "dot.viewfinder")
+                    }
                 }.padding()
             }
             .frame(maxHeight: .infinity, alignment: .bottom)
+        }
+    }
+    
+    func startInertia() {
+        inertiaTimer?.invalidate()
+
+        inertiaTimer = Timer.scheduledTimer(withTimeInterval: 1.0 / 60.0, repeats: true) { timer in
+            // Move item based on current velocity
+            item.position.x += velocity.width / 60
+            item.position.y += velocity.height / 60
+
+            // Apply simple friction
+            velocity.width *= 0.92
+            velocity.height *= 0.92
+
+            // Stop if velocity is small
+            if abs(velocity.width) < 0.5 && abs(velocity.height) < 0.5 {
+                timer.invalidate()
+                inertiaTimer = nil
+            }
         }
     }
 }
