@@ -61,15 +61,29 @@ func dotAtPoint(_ center: CGPoint, radius: CGFloat) -> Path {
 }
 
 struct ContentView: View {
-    @State var item = Item()
-    @State var debug = true
+    @State private var item = Item()
+    @State private var debug = true
+    @GestureState private var dragOffset: CGSize = .zero
     
     var body: some View {
         ZStack {
             VStack {
+                let dragGesture = DragGesture()
+                    .updating($dragOffset) { value, state, _ in
+                        state = value.translation
+                    }
+                    .onEnded { value in
+                        item.position.x += value.translation.width
+                        item.position.y += value.translation.height
+                    }
+                
                 Canvas { ctx, size in
-                    item.draw(in: ctx, debug: debug)
-                }
+                    var previewItem = item
+                    previewItem.position.x += dragOffset.width
+                    previewItem.position.y += dragOffset.height
+                    previewItem.draw(in: ctx, debug: debug)
+                }.gesture (dragGesture)
+                
                 HStack {
                     Button(action: {
                         item.color = Color.random
