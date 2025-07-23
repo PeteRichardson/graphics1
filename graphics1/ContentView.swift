@@ -62,7 +62,7 @@ func dotAtPoint(_ center: CGPoint, radius: CGFloat) -> Path {
 
 struct ContentView: View {
     @State private var item = Item()
-    @State private var debug = true
+    @EnvironmentObject var appState: AppState
     @GestureState private var dragOffset: CGSize = .zero
     
     var body: some View {
@@ -81,7 +81,7 @@ struct ContentView: View {
                     var previewItem = item
                     previewItem.position.x += dragOffset.width
                     previewItem.position.y += dragOffset.height
-                    previewItem.draw(in: ctx, debug: debug)
+                    previewItem.draw(in: ctx, debug: appState.debug)
                 }.gesture (dragGesture)
                 
  
@@ -102,11 +102,6 @@ struct ContentView: View {
                         item.rotation += .degrees(15)
                     }) {
                         Label("Rotate Right", systemImage: "rotate.right")
-                    }
-                    Button(action: {
-                        debug.toggle()
-                    }) {
-                        Label("Debug", systemImage: "ant")
                     }
                 }.padding()
             }
