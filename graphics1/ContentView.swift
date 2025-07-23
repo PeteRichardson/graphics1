@@ -84,6 +84,9 @@ struct ContentView: View {
                     previewItem.draw(in: ctx, debug: debug)
                 }.gesture (dragGesture)
                 
+ 
+            }
+            VStack {
                 HStack {
                     Button(action: {
                         item.color = Color.random
@@ -105,10 +108,9 @@ struct ContentView: View {
                     }) {
                         Label("Debug", systemImage: "ant")
                     }
-                }
-                .background(Color.secondary.opacity(0.1))
-                .frame(maxWidth: 1000, maxHeight: 50)
+                }.padding()
             }
+            .frame(maxHeight: .infinity, alignment: .bottom)
         }
     }
 }
