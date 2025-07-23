@@ -1,0 +1,91 @@
+//
+//  ContentView.swift
+//  graphics1
+//
+//  Created by Peter Richardson on 7/23/25.
+//
+
+import SwiftUI
+
+extension Color {
+    static var random: Color {
+        let all: [Color] = [
+            .blue, .brown, .cyan, .gray, .green, .indigo, .mint,
+            .orange, .pink, .purple, .red, .teal, .yellow
+        ]
+        return all.randomElement() ?? .black
+    }
+}
+
+struct Item {
+    var position: CGPoint = CGPoint(x:100, y:100)
+    var height: CGFloat = 100
+    var width: CGFloat = 200
+    var rotation: Angle = .zero
+    var color: Color = .blue
+    
+    var path : Path {
+        Path(ellipseIn: CGRect(x: position.x, y: position.y, width: width, height: height))
+     }
+    
+    func draw(in ctx: GraphicsContext, debug: Bool = false) {
+        ctx.fill(path, with: .color(self.color))
+        
+        // DRAW ONLY WHEN DEBUGGING
+        if debug {
+            let boundingBox = CGRect(x: position.x, y: position.y, width: width, height: height)
+            ctx.stroke(Path(boundingBox), with: .color(.black), lineWidth: 1)
+            
+            let centerPoint = CGPoint(x: boundingBox.midX, y: boundingBox.midY)
+            let dot = dotAtPoint(centerPoint, radius: 2)
+            ctx.fill(dot, with: .color(.black))
+            // END DEBUGGING STUFF
+        }
+    }
+}
+
+func dotAtPoint(_ center: CGPoint, radius: CGFloat) -> Path {
+    let circleRect = CGRect(
+        x: center.x - radius,
+        y: center.y - radius,
+        width: radius * 2,
+        height: radius * 2
+    )
+    return Path(ellipseIn: circleRect)
+}
+
+struct ContentView: View {
+    @State var item = Item()
+    @State var debug = true
+    
+    var body: some View {
+        ZStack {
+            Color.primary
+            VStack {
+                Canvas { ctx, size in
+                    item.draw(in: ctx, debug: debug)
+                }
+                HStack {
+                    Button("Color") {
+                        item.color = Color.random
+                    }
+                    Button("Rotate Left") {
+                        item.rotation = item.rotation - .degrees(15)
+                    }
+                    Button("Rotate Right") {
+                        item.rotation = item.rotation + .degrees(15)
+                    }
+                    Button("Debug") {
+                        debug.toggle()
+                    }
+                }
+                .background(Color.black)
+                .frame(maxWidth: 1000, maxHeight: 50)
+            }
+        }
+    }
+}
+
+#Preview {
+    ContentView()
+}
