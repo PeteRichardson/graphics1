@@ -66,18 +66,22 @@ struct ContentView: View {
                     item.draw(in: ctx, debug: debug)
                 }
                 HStack {
-                    Button("Color") {
+                    Button(action: {
                         item.color = Color.random
+                    }){
+                        Label("Random Color", systemImage: "paintbrush")
                     }
-                    Button("Rotate Left") {
-                        item.rotation = item.rotation - .degrees(15)
+                    Button(action: {
+                        item.rotation -= .degrees(15)
+                    }) {
+                        Label("Rotate Left", systemImage: "rotate.left")
                     }
-                    Button("Rotate Right") {
-                        item.rotation = item.rotation + .degrees(15)
+                    Button(action: {
+                        item.rotation += .degrees(15)
+                    }) {
+                        Label("Rotate Right", systemImage: "rotate.right")
                     }
-                    Button("Debug") {
-                        debug.toggle()
-                    }
+                    Button(action: { debug.toggle() }) { Label("Debug", systemImage: "ant") }
                 }
                 .background(Color.black)
                 .frame(maxWidth: 1000, maxHeight: 50)
