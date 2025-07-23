@@ -33,14 +33,10 @@ struct Item {
         
         // DRAW ONLY WHEN DEBUGGING
         if debug {
-            let boundingBox = CGRect(x: position.x, y: position.y, width: width, height: height)
             ctx.stroke(Path(boundingBox), with: .color(.black), lineWidth: 1)
             
-            let centerPoint = CGPoint(x: boundingBox.midX, y: boundingBox.midY)
             let dot = dotAtPoint(centerPoint, radius: 2)
-            ctx.fill(dot, with: .color(.black))
-            // END DEBUGGING STUFF
-        }
+            ctx.fill(dot, with: .color(.black))        }
     }
 }
 
@@ -60,7 +56,6 @@ struct ContentView: View {
     
     var body: some View {
         ZStack {
-            Color.primary
             VStack {
                 Canvas { ctx, size in
                     item.draw(in: ctx, debug: debug)
@@ -81,9 +76,13 @@ struct ContentView: View {
                     }) {
                         Label("Rotate Right", systemImage: "rotate.right")
                     }
-                    Button(action: { debug.toggle() }) { Label("Debug", systemImage: "ant") }
+                    Button(action: {
+                        debug.toggle()
+                    }) {
+                        Label("Debug", systemImage: "ant")
+                    }
                 }
-                .background(Color.black)
+                .background(Color.secondary.opacity(0.1))
                 .frame(maxWidth: 1000, maxHeight: 50)
             }
         }
