@@ -21,22 +21,32 @@ struct Item {
     var position: CGPoint = CGPoint(x:100, y:100)
     var height: CGFloat = 100
     var width: CGFloat = 200
-    var rotation: Angle = .zero
+    var rotation: Angle = .degrees(15)
     var color: Color = .blue
+    var debugColor: Color = .black
     
     var path : Path {
         Path(ellipseIn: CGRect(x: position.x, y: position.y, width: width, height: height))
      }
     
     func draw(in ctx: GraphicsContext, debug: Bool = false) {
-        ctx.fill(path, with: .color(self.color))
+        let boundingBox = CGRect(x: position.x, y: position.y, width: width, height: height)
+        let centerPoint = CGPoint(x: boundingBox.midX, y: boundingBox.midY)
+        
+        let transform = CGAffineTransform(translationX: centerPoint.x, y: centerPoint.y)
+            .rotated(by: CGFloat(rotation.radians))
+            .translatedBy(x: -centerPoint.x, y: -centerPoint.y)
+        let rotatedItemPath = path.applying(transform)
+        ctx.fill(rotatedItemPath, with: .color(self.color))
         
         // DRAW ONLY WHEN DEBUGGING
         if debug {
-            ctx.stroke(Path(boundingBox), with: .color(.black), lineWidth: 1)
+            let rotatedPath = Path(boundingBox).applying(transform)
+            ctx.stroke(rotatedPath, with: .color(.black), lineWidth: 1)
             
-            let dot = dotAtPoint(centerPoint, radius: 2)
-            ctx.fill(dot, with: .color(.black))        }
+            let dot = dotAtPoint(centerPoint, radius: 2)   // no need to transform the dot...
+            ctx.fill(dot, with: .color(self.debugColor))
+        }
     }
 }
 
