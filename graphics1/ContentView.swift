@@ -11,14 +11,14 @@ extension Color {
     static func random() -> Color {
         let all: [Color] = [
             .blue, .brown, .cyan, .gray, .green, .indigo, .mint,
-            .orange, .pink, .purple, .red, .teal, .yellow
+            .orange, .pink, .purple, .red, .teal, .yellow,
         ]
         return all.randomElement() ?? .black
     }
 }
 
 struct Item {
-    var position: CGPoint = CGPoint(x:100, y:100)
+    var position: CGPoint = .init(x: 100, y: 100)
     var height: CGFloat = 100
     var width: CGFloat = 200
     var rotation: Angle = .degrees(15)
@@ -42,9 +42,9 @@ struct Item {
             .translatedBy(x: -centerPoint.x, y: -centerPoint.y)
     }
 
-    var path : Path {
+    var path: Path {
         Path(ellipseIn: boundingBox)
-     }
+    }
 
     /// Hit test against the *rotated* ellipse, so grabbing matches what's drawn.
     func contains(_ point: CGPoint) -> Bool {
@@ -54,15 +54,15 @@ struct Item {
     func draw(in ctx: GraphicsContext, debug: Bool = false) {
         let transform = self.transform
         let rotatedItemPath = path.applying(transform)
-        ctx.fill(rotatedItemPath, with: .color(self.color))
+        ctx.fill(rotatedItemPath, with: .color(color))
 
         // DRAW ONLY WHEN DEBUGGING
         if debug {
             let rotatedPath = Path(boundingBox).applying(transform)
             ctx.stroke(rotatedPath, with: .color(.black), lineWidth: 1)
 
-            let dot = dotAtPoint(center, radius: 2)   // no need to transform the dot...
-            ctx.fill(dot, with: .color(self.debugColor))
+            let dot = dotAtPoint(center, radius: 2) // no need to transform the dot...
+            ctx.fill(dot, with: .color(debugColor))
         }
     }
 }
@@ -77,11 +77,9 @@ func dotAtPoint(_ center: CGPoint, radius: CGFloat) -> Path {
     return Path(ellipseIn: circleRect)
 }
 
-
-
 struct ContentView: View {
-    @State private var items : [Item] = [Item(position: CGPoint(x:200, y:300)), Item(position: CGPoint(x:300, y:200), color: .green)]
-    @State private var selectedItem : Int = 0
+    @State private var items: [Item] = [Item(position: CGPoint(x: 200, y: 300)), Item(position: CGPoint(x: 300, y: 200), color: .green)]
+    @State private var selectedItem: Int = 0
     @EnvironmentObject var appState: AppState
     @GestureState private var dragOffset: CGSize = .zero
     @State private var draggedItem: Int? = nil
@@ -103,7 +101,7 @@ struct ContentView: View {
                             guard let hit = itemIndex(at: value.startLocation) else { return }
                             draggedItem = hit
                             selectedItem = hit
-                            items[hit].velocity = .zero   // grabbing it stops any coasting
+                            items[hit].velocity = .zero // grabbing it stops any coasting
                             lastDragTime = value.time
                             lastTranslation = value.translation
                             return
@@ -128,7 +126,7 @@ struct ContentView: View {
                     }
 
                 GeometryReader { geo in
-                    Canvas { ctx, size in
+                    Canvas { ctx, _ in
                         for (i, item) in items.enumerated() {
                             var previewItem = item
                             if i == draggedItem {
@@ -149,7 +147,7 @@ struct ContentView: View {
                 HStack {
                     Button(action: {
                         items[selectedItem].color = Color.random()
-                    }){
+                    }) {
                         Label("Random Color", systemImage: "paintbrush")
                     }
                     Button(action: {
@@ -175,7 +173,7 @@ struct ContentView: View {
             .frame(maxHeight: .infinity, alignment: .bottom)
         }
     }
-    
+
     /// Topmost item under `point`, or nil for empty canvas.
     /// Iterates in reverse because later items are drawn on top.
     func itemIndex(at point: CGPoint) -> Int? {
@@ -201,13 +199,13 @@ struct ContentView: View {
     }
 
     func startInertia() {
-        guard inertiaTimer == nil else { return }   // one timer coasts every moving item
+        guard inertiaTimer == nil else { return } // one timer coasts every moving item
 
         inertiaTimer = Timer.scheduledTimer(withTimeInterval: 1.0 / 60.0, repeats: true) { timer in
             var stillMoving = false
 
             for i in items.indices {
-                guard i != draggedItem else { continue }   // a held item doesn't coast
+                guard i != draggedItem else { continue } // a held item doesn't coast
 
                 // Move item based on its own velocity
                 items[i].position.x += items[i].velocity.width / 60
@@ -218,7 +216,7 @@ struct ContentView: View {
                 items[i].velocity.height *= 0.92
 
                 // Stop if velocity is small
-                if abs(items[i].velocity.width) < 0.5 && abs(items[i].velocity.height) < 0.5 {
+                if abs(items[i].velocity.width) < 0.5, abs(items[i].velocity.height) < 0.5 {
                     items[i].velocity = .zero
                 } else {
                     stillMoving = true
