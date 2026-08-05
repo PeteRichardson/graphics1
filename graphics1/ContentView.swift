@@ -138,7 +138,7 @@ struct ContentView: View {
     @State private var lastDragTime: Date? = nil
     @State private var lastTranslation: CGSize = .zero
     @State private var inertiaTimer: Timer? = nil
-    @State var canvasCenter: CGPoint = .zero
+    @State private var canvasCenter: CGPoint = .zero
 
     // A VStack rather than a ZStack overlay. Buttons are hit-testable views, so
     // while the bar sat in front of the canvas anything drawn underneath one was
