@@ -52,7 +52,7 @@ Three files carry everything:
 
 ### Rendering and interaction
 
-`ContentView` renders all items into one `Canvas` inside a `GeometryReader`, with a button bar overlaid via `ZStack` (aligned to the bottom) so it sits in front of the canvas.
+`ContentView` renders all items into one `Canvas` inside a `GeometryReader`, with the button bar as a sibling row below it in a `VStack(spacing: 0)`. The bar used to be overlaid in front via a `ZStack`; it isn't any more, and shouldn't go back. Buttons are hit-testable views, so anything the canvas drew underneath one couldn't be grabbed — the click went to the button and `itemIndex(at:)` never ran. Because the canvas now occupies its own row, `geo.size` is the canvas's area rather than the window's, which is also what makes "Center" land somewhere visible.
 
 A single `DragGesture` on the `Canvas` handles all items; there are no per-item views to attach gestures to. It works in three parts:
 
