@@ -145,4 +145,78 @@ struct ItemTests {
         #expect(!moved.contains(Self.centre))
         #expect(moved.contains(CGPoint(x: 600, y: 550))) // its own centre
     }
+
+    // MARK: - Agreement with the drawn shape
+
+    /// How far `point` sits from the item's centre, as a multiple of the
+    /// ellipse's own radius in that direction: < 1 inside, 1 on the edge.
+    ///
+    /// Deliberately derived a *different* way from `Item.contains` — this asks
+    /// `CGAffineTransform` for the inverse rather than hand-rolling one — so it
+    /// is an independent opinion rather than a restatement of the code
+    /// under test.
+    private static func normalisedRadius(of point: CGPoint, in item: Item) -> CGFloat {
+        let local = point.applying(item.transform.inverted())
+        let dx = (local.x - item.center.x) / (item.width / 2)
+        let dy = (local.y - item.center.y) / (item.height / 2)
+        return (dx * dx + dy * dy).squareRoot()
+    }
+
+    /// `contains` must agree with the path the item actually draws.
+    ///
+    /// This is the load-bearing test for the arithmetic hit test. `contains`
+    /// used to be `path.applying(transform).contains(point)` — literally the
+    /// shape `draw(in:debug:selected:)` renders, sharing one `transform`, so
+    /// the two could not disagree. Deriving the inverse rotation by hand
+    /// reintroduces that possibility: flip a sign and hit testing becomes a
+    /// mirror image of what is on screen.
+    ///
+    /// None of the other rotation tests catch that. They assert sign-agnostic
+    /// properties on purpose (±90° both put the long axis on the y-axis; the
+    /// 45° case asserts only that *one* diagonal is inside), so a sign flip
+    /// passes every one of them. Verified by mutation: inverting the sign
+    /// convention leaves the rest of this suite green and fails only here.
+    ///
+    /// Points within `boundaryBand` of the edge are skipped. Both definitions
+    /// are correct there and may still disagree a fraction of a unit from the
+    /// curve, which would make this flaky rather than informative.
+    @Test func containsAgreesWithTheShapeItDraws() {
+        let boundaryBand: CGFloat = 0.02
+        var compared = 0
+
+        // Offset off the whole-number grid so no sample lands exactly on the
+        // curve at the axis-aligned rotations, where they otherwise would.
+        for degrees in stride(from: 0.0, to: 360.0, by: 15.0) {
+            let item = Self.item(rotatedBy: .degrees(degrees))
+            let drawn = item.path.applying(item.transform)
+
+            for x in stride(from: 60.3, through: 340.0, by: 7.0) {
+                for y in stride(from: 10.7, through: 290.0, by: 7.0) {
+                    let point = CGPoint(x: x, y: y)
+                    guard abs(Self.normalisedRadius(of: point, in: item) - 1) > boundaryBand
+                    else { continue }
+
+                    compared += 1
+                    #expect(
+                        item.contains(point) == drawn.contains(point),
+                        "hit test disagreed with the drawn path at \(point), rotation \(degrees)°"
+                    )
+                }
+            }
+        }
+
+        // Guards against the grid silently collapsing to nothing and the test
+        // passing vacuously.
+        #expect(compared > 10000)
+    }
+
+    /// A degenerate item encloses nothing, rather than dividing by zero and
+    /// letting a NaN decide the answer.
+    @Test func aZeroSizedItemContainsNothing() {
+        let flat = Item(position: CGPoint(x: 100, y: 100), height: 0, width: 200)
+        #expect(!flat.contains(CGPoint(x: 200, y: 100)))
+
+        let empty = Item(position: CGPoint(x: 100, y: 100), height: 0, width: 0)
+        #expect(!empty.contains(CGPoint(x: 100, y: 100)))
+    }
 }

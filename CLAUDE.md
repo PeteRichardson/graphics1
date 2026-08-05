@@ -46,11 +46,13 @@ Three files carry everything:
 `Item` is a plain struct holding `position` (its bounding box's *origin*, not its center), `width`/`height`, `rotation`, colors, and its current `velocity`. Two things to keep straight when touching it:
 
 - `position` is the top-left of the bounding box. Anything that wants the center uses the `center` computed property (`boundingBox.midX`/`midY`); the "Center" button still subtracts half the size by hand.
-- Rotation is applied as a `CGAffineTransform` from the `transform` property (translate to center → rotate → translate back), not stored in the path. `Item.path` is always the unrotated ellipse, and drawing and hit testing both apply `transform` to it.
+- Rotation is applied as a `CGAffineTransform` from the `transform` property (translate to center → rotate → translate back), not stored in the path. `Item.path` is always the unrotated ellipse, and `draw` applies `transform` to it.
 
 `Item.draw(in:debug:)` fills the rotated path and, when `debug` is set, additionally strokes the rotated bounding box and dots the center. New debug visuals go behind that same flag so ⌘D controls them.
 
-`Item.contains(_:)` hit-tests a point against the *rotated* ellipse, so grabbing an item matches what's actually drawn.
+`Item.contains(_:)` hit-tests a point against the *rotated* ellipse, so grabbing an item matches what's actually drawn. It does **not** go through `transform`: it rotates the point backwards into the item's unrotated frame and evaluates `(u/rx)² + (v/ry)² ≤ 1` directly, which avoids allocating a `Path` per item per gesture event.
+
+That independence is the thing to be careful about. While `contains` was `path.applying(transform).contains(point)`, hit testing and drawing shared one transform and *could not* disagree; now the inverse rotation is derived by hand, and a flipped sign would make grabbing a mirror image of what's on screen. `ItemTests.containsAgreesWithTheShapeItDraws` is what holds the two together — it compares `contains` against `path.applying(transform)` over a grid of points at 24 rotations. Don't delete it, and don't assume the other rotation tests cover this: they assert sign-agnostic properties deliberately, and a sign flip passes all of them.
 
 ### Rendering and interaction
 
