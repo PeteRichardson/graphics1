@@ -8,7 +8,7 @@
 import SwiftUI
 
 extension Color {
-    static var random: Color {
+    static func random() -> Color {
         let all: [Color] = [
             .blue, .brown, .cyan, .gray, .green, .indigo, .mint,
             .orange, .pink, .purple, .red, .teal, .yellow
@@ -148,7 +148,7 @@ struct ContentView: View {
             VStack {
                 HStack {
                     Button(action: {
-                        items[selectedItem].color = Color.random
+                        items[selectedItem].color = Color.random()
                     }){
                         Label("Random Color", systemImage: "paintbrush")
                     }
