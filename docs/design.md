@@ -75,10 +75,24 @@ off-by-half-a-shape confusion in the codebase.
 
 Second, rotation is never baked into the item's path. `Item.path` is
 always the *unrotated* ellipse, and the `transform` property builds the
-rotation fresh — translate to center, rotate, translate back. Drawing and
-hit testing both apply that same transform to that same path, which is
-what keeps the two from drifting apart: an item is grabbable exactly where
-it appears.
+rotation fresh — translate to center, rotate, translate back. Drawing
+applies that transform to that path.
+
+Hit testing used to as well, and that shared transform was what kept the
+two from drifting apart. `contains` now takes a shortcut instead: it
+rotates the *point* backwards into the item's own frame and evaluates the
+ellipse equation directly, so a drag event costs arithmetic rather than a
+`Path` allocation per item. The saving is irrelevant at two items and the
+review said as much — it was taken because the geometry had by then been
+covered by tests, not because the allocation hurt.
+
+The cost is that the two derivations are now independent, so they *can*
+drift: a sign error in the inverse rotation would make items grabbable at
+the mirror image of where they are drawn, and the app would look correct
+while feeling broken. `ItemTests.containsAgreesWithTheShapeItDraws` exists
+to make that impossible to merge — it compares the two definitions across
+a grid of points at 24 rotations, and it is the only test that catches a
+sign flip.
 
 **`ContentView`** renders every item into a single `Canvas` inside a
 `GeometryReader`, with the button bar as a sibling row beneath it in a
@@ -262,3 +276,4 @@ not source). Build and test commands are in `CLAUDE.md`.
 | 2026-08-05 | Selection is now visible; `dotAtPoint` moved onto `Item` (#13, #22, #23) |
 | 2026-08-05 | `Item`'s hit-test geometry covered by tests (#11) |
 | 2026-08-05 | Button bar moved out of the `ZStack` overlay into its own row (#14) |
+| 2026-08-05 | `contains` became arithmetic rather than a `Path` hit test (#28) |

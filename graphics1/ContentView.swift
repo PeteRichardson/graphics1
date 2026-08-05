@@ -76,8 +76,34 @@ struct Item {
     }
 
     /// Hit test against the *rotated* ellipse, so grabbing matches what's drawn.
+    ///
+    /// This used to build `path`, apply `transform` to it, and ask the result —
+    /// three allocations per call, and `itemIndex(at:)` calls it once per item
+    /// per gesture event. Rotating the *point* backwards into the item's own
+    /// unrotated frame answers the same question with arithmetic alone.
+    ///
+    /// `transform` rotates about the centre, so its inverse is a rotation by
+    /// `-rotation` about the same centre. `CGAffineTransform`'s convention is
+    /// `(x, y) -> (x·cos - y·sin, x·sin + y·cos)`; substituting `-rotation`
+    /// and folding `cos(-r) = cos r`, `sin(-r) = -sin r` gives `u`/`v` below.
+    /// The point is then inside exactly when it satisfies the ellipse equation
+    /// `(u/rx)² + (v/ry)² ≤ 1`.
     func contains(_ point: CGPoint) -> Bool {
-        path.applying(transform).contains(point)
+        let rx = width / 2
+        let ry = height / 2
+        // A degenerate ellipse encloses nothing — and would divide by zero.
+        guard rx > 0, ry > 0 else { return false }
+
+        let centerPoint = center
+        let dx = point.x - centerPoint.x
+        let dy = point.y - centerPoint.y
+
+        let cosR = cos(CGFloat(rotation.radians))
+        let sinR = sin(CGFloat(rotation.radians))
+        let u = (dx * cosR + dy * sinR) / rx
+        let v = (dy * cosR - dx * sinR) / ry
+
+        return u * u + v * v <= 1
     }
 
     /// A filled circle of `radius` centred on `point`.
