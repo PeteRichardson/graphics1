@@ -216,10 +216,6 @@ not source). Build and test commands are in `CLAUDE.md`.
 
 ## Open Questions
 
-- [ ] **Selection is invisible.** `selectedItem` decides which shape the
-      four buttons affect, but nothing on screen indicates which one it
-      is. Clicking a shape selects it silently, so the buttons appear to
-      act at random until you know the rule.
 - [ ] **Items are tracked by array index.** `selectedItem` and
       `draggedItem` are positions in the array, which stop meaning
       anything the moment items can be added, removed, or reordered.
@@ -254,3 +250,4 @@ not source). Build and test commands are in `CLAUDE.md`.
 |------|--------|
 | 2026-08-04 | Initial document generated from codebase |
 | 2026-08-05 | Corrected the momentum/refresh-rate claim; folded in the timer fixes from #30 |
+| 2026-08-05 | Selection is now visible; `dotAtPoint` moved onto `Item` (#13, #22, #23) |

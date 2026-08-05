@@ -136,7 +136,7 @@ coasts to a stop. The other one stays put.
 | **Center** | Moves the selected oval to the center of the canvas |
 
 All four act on the most recently clicked oval, which defaults to the blue one
-at launch. Nothing on screen indicates which is selected.
+at launch. The selected oval is outlined in the accent colour.
 
 ### Menu
 
@@ -174,8 +174,8 @@ xcodebuild -project graphics1.xcodeproj -scheme graphics1 -destination 'platform
 ```
 
 The test targets are `graphics1Tests` (Swift Testing) and `graphics1UITests`
-(XCTest/XCUITest). Both currently contain only Xcode's generated stubs — there
-is no real coverage yet.
+(XCTest/XCUITest). `graphics1Tests` covers `Inertia.decay(dt:)` and `Item`'s
+geometry helpers; the UI tests are still Xcode's generated stubs.
 
 Source lives in `graphics1/`, across two files: `graphics1App.swift` (entry
 point, window, debug menu) and `ContentView.swift` (the shape model, drawing,
@@ -198,9 +198,6 @@ toward making changes.
 
 ## Known Limitations
 
-- **Selection is invisible.** The four buttons act on the last oval you
-  clicked, but nothing indicates which that is, so they appear to fire at
-  random until you know the rule.
 - **The canvas cannot pan or zoom.** Dragging the background does nothing, and
   a hard enough throw sends a shape somewhere only the **Center** button can
   retrieve it — nothing constrains shapes to the visible area.
