@@ -63,7 +63,8 @@ func dotAtPoint(_ center: CGPoint, radius: CGFloat) -> Path {
 
 
 struct ContentView: View {
-    @State private var item = Item()
+    @State private var items : [Item] = [Item(position: CGPoint(x:200, y:300)), Item(position: CGPoint(x:300, y:200), color: .green)]
+    @State private var selectedItem : Int = 0
     @EnvironmentObject var appState: AppState
     @GestureState private var dragOffset: CGSize = .zero
     @State private var velocity: CGSize = .zero
@@ -79,8 +80,8 @@ struct ContentView: View {
                     }
                     .onEnded { value in
                         // Step 1: update position
-                        item.position.x += value.translation.width
-                        item.position.y += value.translation.height
+                        items[selectedItem].position.x += value.translation.width
+                        items[selectedItem].position.y += value.translation.height
 
                         // Step 2: compute velocity (pts/sec)
                         let dragDuration = value.time.timeIntervalSince(value.time.advanced(by: -0.1))
@@ -94,10 +95,12 @@ struct ContentView: View {
                 
                 GeometryReader { geo in
                     Canvas { ctx, size in
-                        var previewItem = item
-                        previewItem.position.x += dragOffset.width
-                        previewItem.position.y += dragOffset.height
-                        previewItem.draw(in: ctx, debug: appState.debug)
+                        for item in items {
+                            var previewItem = item
+                            previewItem.position.x += dragOffset.width
+                            previewItem.position.y += dragOffset.height
+                            previewItem.draw(in: ctx, debug: appState.debug)
+                        }
                     }
                     .gesture(dragGesture)
                     .onChange(of: geo.size, initial: true) {
@@ -108,24 +111,24 @@ struct ContentView: View {
             VStack {
                 HStack {
                     Button(action: {
-                        item.color = Color.random
+                        items[selectedItem].color = Color.random
                     }){
                         Label("Random Color", systemImage: "paintbrush")
                     }
                     Button(action: {
-                        item.rotation -= .degrees(15)
+                        items[selectedItem].rotation -= .degrees(15)
                     }) {
                         Label("Rotate Left", systemImage: "rotate.left")
                     }
                     Button(action: {
-                        item.rotation += .degrees(15)
+                        items[selectedItem].rotation += .degrees(15)
                     }) {
                         Label("Rotate Right", systemImage: "rotate.right")
                     }
                     Button(action: {
-                        item.position = CGPoint(
-                            x: canvasCenter.x - item.width / 2,
-                            y: canvasCenter.y - item.height / 2
+                        items[selectedItem].position = CGPoint(
+                            x: canvasCenter.x - items[selectedItem].width / 2,
+                            y: canvasCenter.y - items[selectedItem].height / 2
                         )
                     }) {
                         Label("Center", systemImage: "dot.viewfinder")
@@ -141,8 +144,8 @@ struct ContentView: View {
 
         inertiaTimer = Timer.scheduledTimer(withTimeInterval: 1.0 / 60.0, repeats: true) { timer in
             // Move item based on current velocity
-            item.position.x += velocity.width / 60
-            item.position.y += velocity.height / 60
+            items[selectedItem].position.x += velocity.width / 60
+            items[selectedItem].position.y += velocity.height / 60
 
             // Apply simple friction
             velocity.width *= 0.92
