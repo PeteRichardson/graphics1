@@ -255,12 +255,16 @@ not source). Build and test commands are in `CLAUDE.md`.
       wall-clock scheduled rather than vsync-aligned, so motion can judder
       on a high-refresh display even though its *speed* is now correct.
       `CADisplayLink` would fix it.
-- [ ] **The gesture handling and simulation loop are untested.** `Item`'s
-      pure geometry — `contains`, `transform`, `center`, `boundingBox` — and
-      `Inertia.decay(dt:)` are now covered by `graphics1Tests/`. What remains
-      uncovered is everything embedded in the view: the drag gesture, the
-      pick/preview/commit flow, and the simulation loop itself. None can be
-      exercised without either a UI test or extracting them.
+- [ ] **The gesture handling and simulation loop have only end-to-end
+      coverage.** `Item`'s pure geometry — `contains`, `transform`, `center`,
+      `boundingBox` — and `Inertia.decay(dt:)` are unit tested in
+      `graphics1Tests/`. The drag gesture, the pick/preview/commit flow, and
+      the simulation loop are embedded in the view and cannot be, so
+      `graphics1UITests/` reaches them by driving the real app and comparing
+      screenshots. That proves a drag moves *something* on the canvas; it
+      cannot assert which shape ended up where, because `Canvas`-drawn content
+      has no accessibility representation to query. Asserting on positions
+      needs either that representation or the extraction.
 - [ ] **`Item` assumes an ellipse.** `path` hardcodes `Path(ellipseIn:)`,
       so adding a second shape kind means either a shape enum or turning
       `Item` into a protocol.
@@ -277,3 +281,4 @@ not source). Build and test commands are in `CLAUDE.md`.
 | 2026-08-05 | `Item`'s hit-test geometry covered by tests (#11) |
 | 2026-08-05 | Button bar moved out of the `ZStack` overlay into its own row (#14) |
 | 2026-08-05 | `contains` became arithmetic rather than a `Path` hit test (#28) |
+| 2026-08-05 | UI test stubs replaced with real launch/click/drag coverage (#12) |

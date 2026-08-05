@@ -181,7 +181,9 @@ xcodebuild -project graphics1.xcodeproj -scheme graphics1 -destination 'platform
 
 The test targets are `graphics1Tests` (Swift Testing) and `graphics1UITests`
 (XCTest/XCUITest). `graphics1Tests` covers `Inertia.decay(dt:)` and `Item`'s
-geometry helpers; the UI tests are still Xcode's generated stubs.
+geometry helpers. The UI tests cover launch, the button bar, that a button
+click redraws the canvas, and that dragging an oval moves it — the paths no
+unit test can reach, since they live on the view.
 
 Source lives in `graphics1/`, across two files: `graphics1App.swift` (entry
 point, window, debug menu) and `ContentView.swift` (the shape model, drawing,
@@ -218,10 +220,12 @@ toward making changes.
 - **Ellipses only.** The shape model hardcodes `Path(ellipseIn:)`.
 - **The scene is hardcoded.** Two ovals, fixed positions, no way to add or
   delete shapes and no persistence between launches.
-- **Almost no tests.** `Inertia.decay(dt:)` and `Item`'s geometry helpers are
-  covered. The simulation loop and gesture handling are not, because they live
-  on the view and can't be reached without driving the UI. The UI test target is
-  still Xcode's generated stubs.
+- **Thin test coverage.** `Inertia.decay(dt:)` and `Item`'s geometry helpers
+  are unit tested. The simulation loop and gesture handling can't be, because
+  they live on the view — the UI tests reach them by driving the app and
+  comparing screenshots, which proves the canvas *changed* but not what it
+  drew. Asserting on the shapes themselves needs them to have an accessibility
+  representation first ([#15](https://github.com/PeteRichardson/graphics1/issues/15)).
 
 ---
 
