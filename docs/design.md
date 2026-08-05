@@ -1,6 +1,6 @@
 # graphics1 — Design Document
 
-*Last updated: 2026-08-04*
+*Last updated: 2026-08-05*
 
 ---
 
@@ -111,11 +111,20 @@ shapes move together.
 
 The third stage is *commit and coast*. On release, the translation is
 written into the real position and `startInertia()` takes over: a single
-60 Hz `Timer` advances every item that still has velocity, multiplies each
-velocity by 0.92 per tick, and zeroes an item once it drops below 0.5
-points per second. The timer skips whichever item is currently held, so
-grabbing a coasting shape stops it dead, and it invalidates itself once
-nothing is moving.
+`Timer` advances every item that still has velocity and zeroes an item once
+it drops below the rest threshold. The timer skips whichever item is
+currently held, so grabbing a coasting shape stops it dead, and it
+invalidates itself once nothing is moving.
+
+Each tick measures how much time has actually elapsed rather than assuming
+its nominal interval, so distance is `velocity * dt` and friction is
+`Inertia.decay(dt:)` — the tuned per-tick constant raised to the number of
+reference ticks that `dt` covers. `Timer` coalesces late fires instead of
+catching up, so a fixed step would have made motion slow down whenever the
+main thread was busy. The timer is registered in `.common` run-loop modes,
+without which it stops firing during a live window resize or an open menu,
+and `stopInertia()` tears it down on `.onDisappear`. All the tuning
+constants live on the `Inertia` enum.
 
 ---
 
@@ -147,9 +156,13 @@ churn continuously during a drag and makes cancellation messy.
 **Hand-rolled physics on a `Timer` rather than SwiftUI animation.**
 Friction-based momentum with a variable initial velocity is awkward to
 express as a SwiftUI animation curve, and the explicit loop is the part
-of this project that was interesting to write. The trade-off is a fixed
-60 Hz assumption hardcoded into the per-tick divisor, which does not track
-the actual display refresh rate.
+of this project that was interesting to write. The trade-off is that
+`Timer` is wall-clock scheduled rather than display-linked, so its ticks
+are not aligned to vsync and motion can judder on a high-refresh display.
+It does *not* affect speed: the step integrates against measured elapsed
+time, so a given span of real time produces the same motion whatever the
+tick cadence. `CADisplayLink` is the alternative that would remove the
+judder, at the cost of the explicit loop being the point of the exercise.
 
 **Velocity measured from real event timings.** An earlier implementation
 derived the fling speed from `value.time.timeIntervalSince(value.time
@@ -219,20 +232,16 @@ not source). Build and test commands are in `CLAUDE.md`.
 - [ ] **Nothing constrains items to the canvas.** There is no clamping or
       edge collision, so a hard enough throw sends a shape into
       coordinates from which only the Center button can retrieve it.
-- [ ] **The inertia timer outlives the view.** `inertiaTimer` is
-      invalidated when motion stops, but not when `ContentView`
-      disappears. With a single window that never happens, so it is
-      currently harmless — but it would leak if the app grew a second
-      window or a sheet.
-- [ ] **The 60 Hz tick is an assumption, not a measurement.** The physics
-      step divides by a hardcoded 60 rather than by elapsed time or the
-      display's actual refresh rate, so momentum runs at a different speed
-      on a 120 Hz ProMotion display than on a 60 Hz one.
-- [ ] **There are no tests.** Both test targets contain only Xcode's
-      generated stubs. `Item` is the readily testable part — `contains`,
-      `transform`, and `center` are pure functions of the struct — but the
-      gesture and physics logic is embedded in the view and cannot be
-      exercised without either a UI test or extracting it.
+- [ ] **The simulation is not display-synchronised.** `Timer` is
+      wall-clock scheduled rather than vsync-aligned, so motion can judder
+      on a high-refresh display even though its *speed* is now correct.
+      `CADisplayLink` would fix it.
+- [ ] **Almost nothing is tested.** `Inertia.decay(dt:)` is covered by
+      `graphics1Tests/InertiaTests.swift`, and `Item`'s `contains`,
+      `transform`, and `center` are pure functions that would be equally
+      easy to test but aren't yet. The gesture handling and the simulation
+      loop remain embedded in the view and cannot be exercised without
+      either a UI test or extracting them.
 - [ ] **`Item` assumes an ellipse.** `path` hardcodes `Path(ellipseIn:)`,
       so adding a second shape kind means either a shape enum or turning
       `Item` into a protocol.
@@ -244,3 +253,4 @@ not source). Build and test commands are in `CLAUDE.md`.
 | Date | Change |
 |------|--------|
 | 2026-08-04 | Initial document generated from codebase |
+| 2026-08-05 | Corrected the momentum/refresh-rate claim; folded in the timer fixes from #30 |

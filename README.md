@@ -208,13 +208,16 @@ toward making changes.
 - **Shapes are tracked by array index**, which will break as soon as the app
   can add, remove, or reorder them. Latent today, since it cannot.
   ([#1](https://github.com/PeteRichardson/graphics1/issues/1))
-- **Momentum is frame-rate dependent.** The physics step assumes a 60 Hz tick
-  rather than measuring elapsed time, so shapes coast at a different speed on a
-  120 Hz ProMotion display.
+- **Momentum is not synchronised to the display.** The simulation runs on a
+  `Timer` rather than a `CADisplayLink`, so its ticks are not aligned to vsync
+  and motion can judder on a high-refresh display. Speed is unaffected — the
+  step integrates against measured elapsed time.
 - **Ellipses only.** The shape model hardcodes `Path(ellipseIn:)`.
 - **The scene is hardcoded.** Two ovals, fixed positions, no way to add or
   delete shapes and no persistence between launches.
-- **No tests.** Both test targets are empty stubs.
+- **Almost no tests.** `Inertia.decay(dt:)` is covered; everything else is
+  Xcode's generated stubs, because the rest of the simulation lives on the view
+  and can't be reached without driving the UI.
 
 ---
 
