@@ -24,27 +24,43 @@ struct Item {
     var rotation: Angle = .degrees(15)
     var color: Color = .blue
     var debugColor: Color = .black
-    
-    var path : Path {
-        Path(ellipseIn: CGRect(x: position.x, y: position.y, width: width, height: height))
-     }
-    
-    func draw(in ctx: GraphicsContext, debug: Bool = false) {
-        let boundingBox = CGRect(x: position.x, y: position.y, width: width, height: height)
-        let centerPoint = CGPoint(x: boundingBox.midX, y: boundingBox.midY)
-        
-        let transform = CGAffineTransform(translationX: centerPoint.x, y: centerPoint.y)
+
+    var boundingBox: CGRect {
+        CGRect(x: position.x, y: position.y, width: width, height: height)
+    }
+
+    var center: CGPoint {
+        CGPoint(x: boundingBox.midX, y: boundingBox.midY)
+    }
+
+    /// Rotation about the item's center, built fresh from `position`/`rotation`.
+    var transform: CGAffineTransform {
+        let centerPoint = center
+        return CGAffineTransform(translationX: centerPoint.x, y: centerPoint.y)
             .rotated(by: CGFloat(rotation.radians))
             .translatedBy(x: -centerPoint.x, y: -centerPoint.y)
+    }
+
+    var path : Path {
+        Path(ellipseIn: boundingBox)
+     }
+
+    /// Hit test against the *rotated* ellipse, so grabbing matches what's drawn.
+    func contains(_ point: CGPoint) -> Bool {
+        path.applying(transform).contains(point)
+    }
+
+    func draw(in ctx: GraphicsContext, debug: Bool = false) {
+        let transform = self.transform
         let rotatedItemPath = path.applying(transform)
         ctx.fill(rotatedItemPath, with: .color(self.color))
-        
+
         // DRAW ONLY WHEN DEBUGGING
         if debug {
             let rotatedPath = Path(boundingBox).applying(transform)
             ctx.stroke(rotatedPath, with: .color(.black), lineWidth: 1)
-            
-            let dot = dotAtPoint(centerPoint, radius: 2)   // no need to transform the dot...
+
+            let dot = dotAtPoint(center, radius: 2)   // no need to transform the dot...
             ctx.fill(dot, with: .color(self.debugColor))
         }
     }
@@ -67,6 +83,7 @@ struct ContentView: View {
     @State private var selectedItem : Int = 0
     @EnvironmentObject var appState: AppState
     @GestureState private var dragOffset: CGSize = .zero
+    @State private var draggedItem: Int? = nil
     @State private var velocity: CGSize = .zero
     @State private var inertiaTimer: Timer? = nil
     @State var canvasCenter: CGPoint = .zero
@@ -74,14 +91,24 @@ struct ContentView: View {
     var body: some View {
         ZStack {
             VStack {
-                let dragGesture = DragGesture()
+                let dragGesture = DragGesture(minimumDistance: 1)
                     .updating($dragOffset) { value, state, _ in
                         state = value.translation
                     }
+                    .onChanged { value in
+                        // First change of this gesture: figure out what was grabbed.
+                        guard draggedItem == nil else { return }
+                        guard let hit = itemIndex(at: value.startLocation) else { return }
+                        draggedItem = hit
+                        selectedItem = hit
+                    }
                     .onEnded { value in
+                        defer { draggedItem = nil }
+                        guard let i = draggedItem else { return }
+
                         // Step 1: update position
-                        items[selectedItem].position.x += value.translation.width
-                        items[selectedItem].position.y += value.translation.height
+                        items[i].position.x += value.translation.width
+                        items[i].position.y += value.translation.height
 
                         // Step 2: compute velocity (pts/sec)
                         let dragDuration = value.time.timeIntervalSince(value.time.advanced(by: -0.1))
@@ -95,10 +122,13 @@ struct ContentView: View {
                 
                 GeometryReader { geo in
                     Canvas { ctx, size in
-                        for item in items {
+                        for (i, item) in items.enumerated() {
                             var previewItem = item
-                            previewItem.position.x += dragOffset.width
-                            previewItem.position.y += dragOffset.height
+                            if i == draggedItem {
+                                // Live preview: only the dragged item follows the cursor.
+                                previewItem.position.x += dragOffset.width
+                                previewItem.position.y += dragOffset.height
+                            }
                             previewItem.draw(in: ctx, debug: appState.debug)
                         }
                     }
@@ -139,6 +169,12 @@ struct ContentView: View {
         }
     }
     
+    /// Topmost item under `point`, or nil for empty canvas.
+    /// Iterates in reverse because later items are drawn on top.
+    func itemIndex(at point: CGPoint) -> Int? {
+        items.indices.reversed().first { items[$0].contains(point) }
+    }
+
     func startInertia() {
         inertiaTimer?.invalidate()
 
