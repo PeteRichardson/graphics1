@@ -128,15 +128,21 @@ coasts to a stop. The other one stays put.
 
 ### Buttons
 
-| Button | Result |
-|--------|--------|
-| **Random Color** | Repaints the selected oval in a random color |
-| **Rotate Left** | Rotates the selected oval 15° counter-clockwise |
-| **Rotate Right** | Rotates the selected oval 15° clockwise |
-| **Center** | Moves the selected oval to the center of the canvas |
+| Button | Key | Result |
+|--------|-----|--------|
+| **Random Color** | <kbd>C</kbd> | Repaints the selected oval in a random color |
+| **Rotate Left** | <kbd>[</kbd> | Rotates the selected oval 15° counter-clockwise |
+| **Rotate Right** | <kbd>]</kbd> | Rotates the selected oval 15° clockwise |
+| **Center** | <kbd>0</kbd> | Moves the selected oval to the center of the canvas |
 
 All four act on the most recently clicked oval, which defaults to the blue one
 at launch. The selected oval is outlined in the accent colour.
+
+The keys are unmodified rather than ⌘-prefixed — these act on the selected shape
+while your hands are already on the canvas, and there is no text entry anywhere in
+the app for a bare letter to collide with. Rotating 90° is <kbd>]</kbd> six times
+rather than six clicks. Each button's tooltip names its key, since a bare
+`.keyboardShortcut` on a button is otherwise invisible.
 
 ### Menu
 
