@@ -7,8 +7,14 @@
 
 import XCTest
 
+/// Launch smoke test, run once per target application UI configuration.
+///
+/// As generated this asserted nothing at all — it launched the app and attached
+/// a screenshot, which cannot fail. The screenshot is worth keeping (it is the
+/// only visual record a CI run would leave behind), but it needs an assertion
+/// beside it, so the app having launched into an unusable state is a failure
+/// rather than a nice picture of one.
 final class graphics1UITestsLaunchTests: XCTestCase {
-
     override class var runsForEachTargetApplicationUIConfiguration: Bool {
         true
     }
@@ -18,12 +24,14 @@ final class graphics1UITestsLaunchTests: XCTestCase {
     }
 
     @MainActor
-    func testLaunch() throws {
+    func testLaunch() {
         let app = XCUIApplication()
         app.launch()
 
-        // Insert steps here to perform after app launch but before taking a screenshot,
-        // such as logging into a test account or navigating somewhere in the app
+        XCTAssertTrue(
+            app.buttons["Center"].waitForExistence(timeout: 30),
+            "the app launched but never presented its button bar"
+        )
 
         let attachment = XCTAttachment(screenshot: app.screenshot())
         attachment.name = "Launch Screen"

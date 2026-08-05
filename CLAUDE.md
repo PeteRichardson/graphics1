@@ -21,7 +21,7 @@ xcodebuild -project graphics1.xcodeproj -scheme graphics1 -destination 'platform
 
 # Run a single test target / class / method
 xcodebuild ... test -only-testing:graphics1Tests
-xcodebuild ... test -only-testing:graphics1UITests/graphics1UITests/testExample
+xcodebuild ... test -only-testing:graphics1UITests/graphics1UITests/testDraggingAnOvalMovesIt
 
 # Run the app
 open Build/graphics1/Build/Products/Debug/graphics1.app   # or just run from Xcode
@@ -39,7 +39,9 @@ Three files carry everything:
 
 - **`graphics1/ContentView.swift`** — everything else: the `Item` model, drawing, gestures, inertia, and the button bar.
 
-- **`graphics1Tests` / `graphics1UITests`** — `InertiaTests.swift` covers the time-stepping maths and `ItemTests.swift` covers `Item`'s geometry helpers. No stubs remain in the unit target; `graphics1UITests` is still Xcode-generated stubs.
+- **`graphics1Tests` / `graphics1UITests`** — `InertiaTests.swift` covers the time-stepping maths and `ItemTests.swift` covers `Item`'s geometry helpers. `graphics1UITests` covers what the unit tests structurally cannot: that the app launches with a usable button bar, that clicking a button redraws the canvas, and that dragging an oval moves it. No Xcode-generated stubs remain in either target.
+
+  The UI tests compare screenshots, because `Canvas`-drawn shapes have no accessibility representation for XCUITest to query (#15). Read the class comment in `graphics1UITests.swift` before touching them: screenshots are *not* deterministic — two taken back to back differ in ~1,700 of 23.7M bytes — so the assertion is that a change is large relative to noise measured in the same run, never that two frames are unequal. A naive `before != after` version passed even when the drag moved nothing.
 
 ### The drawing model
 
