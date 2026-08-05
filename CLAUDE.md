@@ -37,7 +37,7 @@ Three files carry everything:
 
 - **`graphics1/ContentView.swift`** — everything else: the `Item` model, drawing, gestures, inertia, and the button bar.
 
-- **`graphics1Tests` / `graphics1UITests`** — `InertiaTests.swift` covers the time-stepping maths; everything else is still Xcode-generated stubs.
+- **`graphics1Tests` / `graphics1UITests`** — `InertiaTests.swift` covers the time-stepping maths and `ItemTests.swift` covers `Item`'s geometry helpers. No stubs remain in the unit target; `graphics1UITests` is still Xcode-generated stubs.
 
 ### The drawing model
 

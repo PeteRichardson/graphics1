@@ -212,9 +212,10 @@ toward making changes.
 - **Ellipses only.** The shape model hardcodes `Path(ellipseIn:)`.
 - **The scene is hardcoded.** Two ovals, fixed positions, no way to add or
   delete shapes and no persistence between launches.
-- **Almost no tests.** `Inertia.decay(dt:)` is covered; everything else is
-  Xcode's generated stubs, because the rest of the simulation lives on the view
-  and can't be reached without driving the UI.
+- **Almost no tests.** `Inertia.decay(dt:)` and `Item`'s geometry helpers are
+  covered. The simulation loop and gesture handling are not, because they live
+  on the view and can't be reached without driving the UI. The UI test target is
+  still Xcode's generated stubs.
 
 ---
 
