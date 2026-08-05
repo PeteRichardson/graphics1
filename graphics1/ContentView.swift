@@ -93,9 +93,6 @@ struct ContentView: View {
                     }
                 
                 GeometryReader { geo in
-                    let canvasSize = geo.size
-                    let center = CGPoint(x: canvasSize.width / 2, y: canvasSize.height / 2)
-
                     Canvas { ctx, size in
                         var previewItem = item
                         previewItem.position.x += dragOffset.width
@@ -103,8 +100,8 @@ struct ContentView: View {
                         previewItem.draw(in: ctx, debug: appState.debug)
                     }
                     .gesture(dragGesture)
-                    .onChange(of: geo.size) {
-                        canvasCenter = center
+                    .onChange(of: geo.size, initial: true) {
+                        canvasCenter = CGPoint(x: geo.size.width / 2, y: geo.size.height / 2)
                     }
                 }
             }
