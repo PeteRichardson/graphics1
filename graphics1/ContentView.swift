@@ -24,6 +24,7 @@ struct Item {
     var rotation: Angle = .degrees(15)
     var color: Color = .blue
     var debugColor: Color = .black
+    var velocity: CGSize = .zero
 
     var boundingBox: CGRect {
         CGRect(x: position.x, y: position.y, width: width, height: height)
@@ -84,10 +85,11 @@ struct ContentView: View {
     @EnvironmentObject var appState: AppState
     @GestureState private var dragOffset: CGSize = .zero
     @State private var draggedItem: Int? = nil
-    @State private var velocity: CGSize = .zero
+    @State private var lastDragTime: Date? = nil
+    @State private var lastTranslation: CGSize = .zero
     @State private var inertiaTimer: Timer? = nil
     @State var canvasCenter: CGPoint = .zero
-    
+
     var body: some View {
         ZStack {
             VStack {
@@ -96,30 +98,35 @@ struct ContentView: View {
                         state = value.translation
                     }
                     .onChanged { value in
-                        // First change of this gesture: figure out what was grabbed.
-                        guard draggedItem == nil else { return }
-                        guard let hit = itemIndex(at: value.startLocation) else { return }
-                        draggedItem = hit
-                        selectedItem = hit
+                        if draggedItem == nil {
+                            // First change of this gesture: figure out what was grabbed.
+                            guard let hit = itemIndex(at: value.startLocation) else { return }
+                            draggedItem = hit
+                            selectedItem = hit
+                            items[hit].velocity = .zero   // grabbing it stops any coasting
+                            lastDragTime = value.time
+                            lastTranslation = value.translation
+                            return
+                        }
+                        trackVelocity(value)
                     }
                     .onEnded { value in
-                        defer { draggedItem = nil }
+                        defer {
+                            draggedItem = nil
+                            lastDragTime = nil
+                            lastTranslation = .zero
+                        }
                         guard let i = draggedItem else { return }
 
-                        // Step 1: update position
+                        trackVelocity(value)
+
+                        // Commit the live-preview offset into the real position.
                         items[i].position.x += value.translation.width
                         items[i].position.y += value.translation.height
 
-                        // Step 2: compute velocity (pts/sec)
-                        let dragDuration = value.time.timeIntervalSince(value.time.advanced(by: -0.1))
-                        let vx = value.translation.width / dragDuration
-                        let vy = value.translation.height / dragDuration
-                        self.velocity = CGSize(width: vx, height: vy)
-
-                        // Step 3: start inertia animation
                         startInertia()
                     }
-                
+
                 GeometryReader { geo in
                     Canvas { ctx, size in
                         for (i, item) in items.enumerated() {
@@ -175,20 +182,50 @@ struct ContentView: View {
         items.indices.reversed().first { items[$0].contains(point) }
     }
 
+    /// Velocity in pts/sec from the most recent slice of the drag, lightly
+    /// smoothed so a jittery last event doesn't dominate the fling.
+    func trackVelocity(_ value: DragGesture.Value) {
+        guard let i = draggedItem, let previousTime = lastDragTime else { return }
+        let dt = value.time.timeIntervalSince(previousTime)
+        guard dt > 0 else { return }
+
+        let vx = (value.translation.width - lastTranslation.width) / dt
+        let vy = (value.translation.height - lastTranslation.height) / dt
+
+        let smoothing = 0.7
+        items[i].velocity.width = items[i].velocity.width * (1 - smoothing) + vx * smoothing
+        items[i].velocity.height = items[i].velocity.height * (1 - smoothing) + vy * smoothing
+
+        lastDragTime = value.time
+        lastTranslation = value.translation
+    }
+
     func startInertia() {
-        inertiaTimer?.invalidate()
+        guard inertiaTimer == nil else { return }   // one timer coasts every moving item
 
         inertiaTimer = Timer.scheduledTimer(withTimeInterval: 1.0 / 60.0, repeats: true) { timer in
-            // Move item based on current velocity
-            items[selectedItem].position.x += velocity.width / 60
-            items[selectedItem].position.y += velocity.height / 60
+            var stillMoving = false
 
-            // Apply simple friction
-            velocity.width *= 0.92
-            velocity.height *= 0.92
+            for i in items.indices {
+                guard i != draggedItem else { continue }   // a held item doesn't coast
 
-            // Stop if velocity is small
-            if abs(velocity.width) < 0.5 && abs(velocity.height) < 0.5 {
+                // Move item based on its own velocity
+                items[i].position.x += items[i].velocity.width / 60
+                items[i].position.y += items[i].velocity.height / 60
+
+                // Apply simple friction
+                items[i].velocity.width *= 0.92
+                items[i].velocity.height *= 0.92
+
+                // Stop if velocity is small
+                if abs(items[i].velocity.width) < 0.5 && abs(items[i].velocity.height) < 0.5 {
+                    items[i].velocity = .zero
+                } else {
+                    stillMoving = true
+                }
+            }
+
+            if !stillMoving {
                 timer.invalidate()
                 inertiaTimer = nil
             }
