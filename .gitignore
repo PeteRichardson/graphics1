@@ -1,4 +1,14 @@
-config.json
+#-------------------------------------------------
+# Skills pipeline artefacts
+#   (~/.claude/skills/WORKFLOW.md — review → issue → PR → merge)
+#
+# Scratch output from /issue-triage, /pr-triage, and /work-issue worktrees
+# is covered globally by ~/.gitignore_global, not here.
+#-------------------------------------------------
+# Stage 1 review reports. Disposable by design: regenerate freely. Finding IDs
+# (F1, F2, ...) are reconstructed from git history, so a deleted or never-
+# committed report can't collide with IDs already cited in issues.
+docs/reviews/
 
 #-------------------------------------------------
 # macOS housekeeping
@@ -37,6 +47,7 @@ profile
 # custom CONFIGURATION_BUILD_DIR settings or other edge cases)
 Build/
 DerivedData/
+.derived-data-log-*
 
 # Swift Package Manager artefacts
 .build/
