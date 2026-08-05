@@ -14,31 +14,20 @@ docs/reviews/
 # macOS housekeeping
 #-------------------------------------------------
 .DS_Store
-.Trashes
 *.swp
-*.lock
-profile
-*.mode1v3
-*.mode2v3
 
 #-------------------------------------------------
 # Xcode project & workspace artefacts
 #-------------------------------------------------
 # User–specific settings (window layout, breakpoints, scheme state, etc.)
-*.xcuserdatad/
-*.xcuserstate
 **/xcuserdata/
 
 # Intermediates created when a file collides or a merge aborts
 *.moved-aside
-*.xccheckout
 *.xcodeproj/*-backup*
 
 # Xcode build-time reports & diagnostics
-*.xcactivitylog
 *.xcresult
-*.xccovreport
-*.xccovarchive
 
 #-------------------------------------------------
 # Derived output
@@ -51,19 +40,10 @@ DerivedData/
 
 # Swift Package Manager artefacts
 .build/
-.swiftpm/xcode/package.xcworkspace/xcuserdata/
 
 #-------------------------------------------------
 # Miscellaneous
 #-------------------------------------------------
-
 # Symbolic crashes & profiling
 *.dSYM.zip
 *.dSYM
-
-# Xcode preview & canvas state
-*.preview-thumbnails
-
-# Playgrounds’ live data & timeline
-timeline.xctimeline
-playground.xcworkspace/xcuserdata/
