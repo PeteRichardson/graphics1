@@ -29,6 +29,8 @@ open Build/graphics1/Build/Products/Debug/graphics1.app   # or just run from Xco
 
 Targets macOS 15.5, Swift 5 language mode, bundle id `com.peterichardson.graphics1`. App Sandbox is on (see `graphics1/graphics1.entitlements`).
 
+Formatting is checked with `swiftformat graphics1 graphics1Tests graphics1UITests --lint` (point it at the source directories, not `.` — the in-repo `Build/` directory contains generated Swift that will fail the lint). The `.swift-version` file at the repo root exists solely so swiftformat doesn't disable its version-gated rules; keep it in step with `SWIFT_VERSION` in the project file.
+
 ## Architecture
 
 Three files carry everything:
