@@ -70,7 +70,7 @@ Velocity is per-item (`Item.velocity`) and measured in `trackVelocity(_:)` by di
 
 All tuning constants live on the `Inertia` enum (`friction`, `restThreshold`, `tickInterval`, `referenceRate`, `velocitySmoothing`) rather than as inline literals. `Inertia.decay(dt:)` is a pure function and is the one piece of the simulation currently covered by unit tests (`graphics1Tests/InertiaTests.swift`) — everything else still requires driving the UI.
 
-`selectedItem` still drives the button bar and has no visual affordance; there is no selection outline yet.
+`selectedItem` drives the button bar, and the selected item is stroked in `Item.selectionColor` by `Item.draw(in:debug:selected:)`. The outline traces the rotated ellipse rather than the bounding box, so it reads as the shape rather than as a box, and it is drawn after the fill so it is never painted over. It is *not* gated on the debug flag — it is a selection affordance, not a debug visual.
 
 `canvasCenter` is assigned from `geo.size` via `onChange(of:initial:)`. The `initial: true` matters — without it the value stays `.zero` until the window is resized and the "Center" button throws the item off-screen.
 

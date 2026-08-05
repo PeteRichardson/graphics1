@@ -80,30 +80,53 @@ struct Item {
         path.applying(transform).contains(point)
     }
 
-    func draw(in ctx: GraphicsContext, debug: Bool = false) {
+    /// A filled circle of `radius` centred on `point`.
+    ///
+    /// Internal rather than private so the geometry can be unit tested; it is
+    /// only meaningfully called from `draw(in:debug:selected:)`.
+    static func dot(at point: CGPoint, radius: CGFloat) -> Path {
+        Path(ellipseIn: CGRect(
+            x: point.x - radius,
+            y: point.y - radius,
+            width: radius * 2,
+            height: radius * 2
+        ))
+    }
+
+    func draw(in ctx: GraphicsContext, debug: Bool = false, selected: Bool = false) {
         let transform = self.transform
         let rotatedItemPath = path.applying(transform)
         ctx.fill(rotatedItemPath, with: .color(color))
 
+        // The selection outline traces the shape itself rather than its
+        // bounding box, so it reads as "this oval" and not "this rectangle".
+        // Drawn after the fill so it is never painted over.
+        if selected {
+            ctx.stroke(
+                rotatedItemPath,
+                with: .color(Item.selectionColor),
+                lineWidth: Item.selectionLineWidth
+            )
+        }
+
         // DRAW ONLY WHEN DEBUGGING
         if debug {
             let rotatedPath = Path(boundingBox).applying(transform)
-            ctx.stroke(rotatedPath, with: .color(.black), lineWidth: 1)
+            ctx.stroke(rotatedPath, with: .color(debugColor), lineWidth: 1)
 
-            let dot = dotAtPoint(center, radius: 2) // no need to transform the dot...
+            let dot = Item.dot(at: center, radius: 2) // no need to transform the dot...
             ctx.fill(dot, with: .color(debugColor))
         }
     }
 }
 
-func dotAtPoint(_ center: CGPoint, radius: CGFloat) -> Path {
-    let circleRect = CGRect(
-        x: center.x - radius,
-        y: center.y - radius,
-        width: radius * 2,
-        height: radius * 2
-    )
-    return Path(ellipseIn: circleRect)
+extension Item {
+    /// Colour of the selection outline. Uses the app accent so it follows the
+    /// system tint rather than fighting an item's own colour.
+    static let selectionColor: Color = .accentColor
+
+    /// Wide enough to read against a filled shape at a glance.
+    static let selectionLineWidth: CGFloat = 3
 }
 
 struct ContentView: View {
@@ -163,7 +186,11 @@ struct ContentView: View {
                                 previewItem.position.x += dragOffset.width
                                 previewItem.position.y += dragOffset.height
                             }
-                            previewItem.draw(in: ctx, debug: appState.debug)
+                            previewItem.draw(
+                                in: ctx,
+                                debug: appState.debug,
+                                selected: i == selectedItem
+                            )
                         }
                     }
                     .gesture(dragGesture)
