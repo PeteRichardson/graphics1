@@ -68,7 +68,7 @@ Velocity is per-item (`Item.velocity`) and measured in `trackVelocity(_:)` by di
 - **The timer is registered in `.common` run-loop modes**, via `RunLoop.main.add(_:forMode:)` rather than `Timer.scheduledTimer`. A default-mode timer stops firing during a live window resize or while a menu is open, which froze coasting items mid-flight.
 - **`stopInertia()` is wired to `.onDisappear`**, since the timer's closure otherwise outlives the view that owns it.
 
-All tuning constants live on the `Inertia` enum (`friction`, `restThreshold`, `tickInterval`, `referenceRate`, `velocitySmoothing`) rather than as inline literals. `Inertia.decay(dt:)` is a pure function and is the one piece of the simulation currently covered by unit tests (`graphics1Tests/InertiaTests.swift`) — everything else still requires driving the UI.
+All tuning constants live on the `Inertia` enum (`friction`, `restThreshold`, `tickInterval`, `referenceRate`, `velocitySmoothing`) rather than as inline literals. `Inertia.decay(dt:)` is a pure function and is covered by `graphics1Tests/InertiaTests.swift`, as `Item`'s geometry is by `ItemTests.swift`. The simulation *loop* and the gesture handling are not — those live on the view and still require driving the UI.
 
 `selectedItem` drives the button bar, and the selected item is stroked in `Item.selectionColor` by `Item.draw(in:debug:selected:)`. The outline traces the rotated ellipse rather than the bounding box, so it reads as the shape rather than as a box, and it is drawn after the fill so it is never painted over. It is *not* gated on the debug flag — it is a selection affordance, not a debug visual.
 
