@@ -81,9 +81,18 @@ what keeps the two from drifting apart: an item is grabbable exactly where
 it appears.
 
 **`ContentView`** renders every item into a single `Canvas` inside a
-`GeometryReader`, with the button bar overlaid via a `ZStack` aligned to
-the bottom so it sits in front. It holds the item array, the selection and
-drag indices, the inertia timer, and the drag-velocity bookkeeping.
+`GeometryReader`, with the button bar as a sibling row beneath it in a
+`VStack`. It holds the item array, the selection and drag indices, the
+inertia timer, and the drag-velocity bookkeeping.
+
+The bar was originally overlaid in front of the canvas via a `ZStack`,
+which cost more than it looked like it did: buttons are hit-testable
+views, so a shape resting under one could not be grabbed at all — the
+click was consumed by the button and `itemIndex(at:)` never ran. Since
+the canvas has no panning, a shape parked there was reachable only via
+the Center button. Giving the bar its own row means the canvas stops
+where the bar starts, and every point the canvas draws on is a point it
+can be grabbed at.
 
 ### Data Flow
 
@@ -252,3 +261,4 @@ not source). Build and test commands are in `CLAUDE.md`.
 | 2026-08-05 | Corrected the momentum/refresh-rate claim; folded in the timer fixes from #30 |
 | 2026-08-05 | Selection is now visible; `dotAtPoint` moved onto `Item` (#13, #22, #23) |
 | 2026-08-05 | `Item`'s hit-test geometry covered by tests (#11) |
+| 2026-08-05 | Button bar moved out of the `ZStack` overlay into its own row (#14) |

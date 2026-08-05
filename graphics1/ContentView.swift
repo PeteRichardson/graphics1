@@ -140,93 +140,98 @@ struct ContentView: View {
     @State private var inertiaTimer: Timer? = nil
     @State var canvasCenter: CGPoint = .zero
 
+    // A VStack rather than a ZStack overlay. Buttons are hit-testable views, so
+    // while the bar sat in front of the canvas anything drawn underneath one was
+    // unreachable: the click went to the button and `itemIndex(at:)` never ran.
+    // Giving the bar its own row means the canvas simply stops where the bar
+    // starts, and every point the canvas draws on is a point it can be grabbed at.
     var body: some View {
-        ZStack {
-            VStack {
-                let dragGesture = DragGesture(minimumDistance: 1)
-                    .updating($dragOffset) { value, state, _ in
-                        state = value.translation
+        VStack(spacing: 0) {
+            let dragGesture = DragGesture(minimumDistance: 1)
+                .updating($dragOffset) { value, state, _ in
+                    state = value.translation
+                }
+                .onChanged { value in
+                    if draggedItem == nil {
+                        // First change of this gesture: figure out what was grabbed.
+                        guard let hit = itemIndex(at: value.startLocation) else { return }
+                        draggedItem = hit
+                        selectedItem = hit
+                        items[hit].velocity = .zero // grabbing it stops any coasting
+                        lastDragTime = value.time
+                        lastTranslation = value.translation
+                        return
                     }
-                    .onChanged { value in
-                        if draggedItem == nil {
-                            // First change of this gesture: figure out what was grabbed.
-                            guard let hit = itemIndex(at: value.startLocation) else { return }
-                            draggedItem = hit
-                            selectedItem = hit
-                            items[hit].velocity = .zero // grabbing it stops any coasting
-                            lastDragTime = value.time
-                            lastTranslation = value.translation
-                            return
+                    trackVelocity(value)
+                }
+                .onEnded { value in
+                    defer {
+                        draggedItem = nil
+                        lastDragTime = nil
+                        lastTranslation = .zero
+                    }
+                    guard let i = draggedItem else { return }
+
+                    trackVelocity(value)
+
+                    // Commit the live-preview offset into the real position.
+                    items[i].position.x += value.translation.width
+                    items[i].position.y += value.translation.height
+
+                    startInertia()
+                }
+
+            GeometryReader { geo in
+                Canvas { ctx, _ in
+                    for (i, item) in items.enumerated() {
+                        var previewItem = item
+                        if i == draggedItem {
+                            // Live preview: only the dragged item follows the cursor.
+                            previewItem.position.x += dragOffset.width
+                            previewItem.position.y += dragOffset.height
                         }
-                        trackVelocity(value)
-                    }
-                    .onEnded { value in
-                        defer {
-                            draggedItem = nil
-                            lastDragTime = nil
-                            lastTranslation = .zero
-                        }
-                        guard let i = draggedItem else { return }
-
-                        trackVelocity(value)
-
-                        // Commit the live-preview offset into the real position.
-                        items[i].position.x += value.translation.width
-                        items[i].position.y += value.translation.height
-
-                        startInertia()
-                    }
-
-                GeometryReader { geo in
-                    Canvas { ctx, _ in
-                        for (i, item) in items.enumerated() {
-                            var previewItem = item
-                            if i == draggedItem {
-                                // Live preview: only the dragged item follows the cursor.
-                                previewItem.position.x += dragOffset.width
-                                previewItem.position.y += dragOffset.height
-                            }
-                            previewItem.draw(
-                                in: ctx,
-                                debug: appState.debug,
-                                selected: i == selectedItem
-                            )
-                        }
-                    }
-                    .gesture(dragGesture)
-                    .onChange(of: geo.size, initial: true) {
-                        canvasCenter = CGPoint(x: geo.size.width / 2, y: geo.size.height / 2)
+                        previewItem.draw(
+                            in: ctx,
+                            debug: appState.debug,
+                            selected: i == selectedItem
+                        )
                     }
                 }
+                .gesture(dragGesture)
+                // geo.size is now the canvas's own row rather than the whole
+                // window, so this centres an item in the region it can be seen
+                // and grabbed in — not behind the bar.
+                .onChange(of: geo.size, initial: true) {
+                    canvasCenter = CGPoint(x: geo.size.width / 2, y: geo.size.height / 2)
+                }
             }
-            VStack {
-                HStack {
-                    Button(action: {
-                        items[selectedItem].color = Color.random()
-                    }) {
-                        Label("Random Color", systemImage: "paintbrush")
-                    }
-                    Button(action: {
-                        items[selectedItem].rotation -= .degrees(15)
-                    }) {
-                        Label("Rotate Left", systemImage: "rotate.left")
-                    }
-                    Button(action: {
-                        items[selectedItem].rotation += .degrees(15)
-                    }) {
-                        Label("Rotate Right", systemImage: "rotate.right")
-                    }
-                    Button(action: {
-                        items[selectedItem].position = CGPoint(
-                            x: canvasCenter.x - items[selectedItem].width / 2,
-                            y: canvasCenter.y - items[selectedItem].height / 2
-                        )
-                    }) {
-                        Label("Center", systemImage: "dot.viewfinder")
-                    }
-                }.padding()
+
+            HStack {
+                Button(action: {
+                    items[selectedItem].color = Color.random()
+                }) {
+                    Label("Random Color", systemImage: "paintbrush")
+                }
+                Button(action: {
+                    items[selectedItem].rotation -= .degrees(15)
+                }) {
+                    Label("Rotate Left", systemImage: "rotate.left")
+                }
+                Button(action: {
+                    items[selectedItem].rotation += .degrees(15)
+                }) {
+                    Label("Rotate Right", systemImage: "rotate.right")
+                }
+                Button(action: {
+                    items[selectedItem].position = CGPoint(
+                        x: canvasCenter.x - items[selectedItem].width / 2,
+                        y: canvasCenter.y - items[selectedItem].height / 2
+                    )
+                }) {
+                    Label("Center", systemImage: "dot.viewfinder")
+                }
             }
-            .frame(maxHeight: .infinity, alignment: .bottom)
+            .padding()
         }
         .onDisappear(perform: stopInertia)
     }
