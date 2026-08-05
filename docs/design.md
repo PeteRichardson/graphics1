@@ -232,12 +232,12 @@ not source). Build and test commands are in `CLAUDE.md`.
       wall-clock scheduled rather than vsync-aligned, so motion can judder
       on a high-refresh display even though its *speed* is now correct.
       `CADisplayLink` would fix it.
-- [ ] **Almost nothing is tested.** `Inertia.decay(dt:)` is covered by
-      `graphics1Tests/InertiaTests.swift`, and `Item`'s `contains`,
-      `transform`, and `center` are pure functions that would be equally
-      easy to test but aren't yet. The gesture handling and the simulation
-      loop remain embedded in the view and cannot be exercised without
-      either a UI test or extracting them.
+- [ ] **The gesture handling and simulation loop are untested.** `Item`'s
+      pure geometry — `contains`, `transform`, `center`, `boundingBox` — and
+      `Inertia.decay(dt:)` are now covered by `graphics1Tests/`. What remains
+      uncovered is everything embedded in the view: the drag gesture, the
+      pick/preview/commit flow, and the simulation loop itself. None can be
+      exercised without either a UI test or extracting them.
 - [ ] **`Item` assumes an ellipse.** `path` hardcodes `Path(ellipseIn:)`,
       so adding a second shape kind means either a shape enum or turning
       `Item` into a protocol.
@@ -251,3 +251,4 @@ not source). Build and test commands are in `CLAUDE.md`.
 | 2026-08-04 | Initial document generated from codebase |
 | 2026-08-05 | Corrected the momentum/refresh-rate claim; folded in the timer fixes from #30 |
 | 2026-08-05 | Selection is now visible; `dotAtPoint` moved onto `Item` (#13, #22, #23) |
+| 2026-08-05 | `Item`'s hit-test geometry covered by tests (#11) |
