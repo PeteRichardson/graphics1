@@ -76,6 +76,8 @@ All tuning constants live on the `Inertia` enum (`friction`, `restThreshold`, `t
 
 `selectedItem` drives the button bar, and the selected item is stroked in `Item.selectionColor` by `Item.draw(in:debug:selected:)`. The outline traces the rotated ellipse rather than the bounding box, so it reads as the shape rather than as a box, and it is drawn after the fill so it is never painted over. It is *not* gated on the debug flag — it is a selection affordance, not a debug visual.
 
+The four bar buttons carry unmodified `.keyboardShortcut`s — <kbd>C</kbd>, <kbd>[</kbd>, <kbd>]</kbd>, <kbd>0</kbd> — plus a `.help` tooltip naming each key, because a bare shortcut on a button has no other affordance. They are unmodified rather than ⌘-prefixed on purpose: they act on the selected shape during direct manipulation, and nothing in the app takes text input. ⌘D is modified because it lives in a `CommandMenu`, where unmodified shortcuts aren't available. A menu-bar version of these four is *not* a drop-in change — a `CommandMenu` lives in the `App` scene and cannot reach `items`/`selectedItem`, which are `ContentView`'s private `@State`; that is tracked separately and depends on #8.
+
 `canvasCenter` is assigned from `geo.size` via `onChange(of:initial:)`. The `initial: true` matters — without it the value stays `.zero` until the window is resized and the "Center" button throws the item off-screen.
 
 ## Conventions

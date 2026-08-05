@@ -232,22 +232,38 @@ struct ContentView: View {
                 }
             }
 
+            // Unmodified keys rather than ⌘-prefixed ones: these act on the
+            // selected shape while the hands are already on the canvas, which
+            // is the direct-manipulation idiom, and the app has no text entry
+            // for a bare letter to collide with. ⌘D stays modified because it
+            // lives in the menu bar, where an unmodified shortcut is not an
+            // option. `.help` carries the shortcut in the tooltip, since a
+            // bare `.keyboardShortcut` on a button is otherwise undiscoverable.
             HStack {
                 Button(action: {
                     items[selectedItem].color = Color.random()
                 }) {
                     Label("Random Color", systemImage: "paintbrush")
                 }
+                .keyboardShortcut("c", modifiers: [])
+                .help("Repaint the selected shape (C)")
+
                 Button(action: {
                     items[selectedItem].rotation -= .degrees(15)
                 }) {
                     Label("Rotate Left", systemImage: "rotate.left")
                 }
+                .keyboardShortcut("[", modifiers: [])
+                .help("Rotate the selected shape 15° counter-clockwise ([)")
+
                 Button(action: {
                     items[selectedItem].rotation += .degrees(15)
                 }) {
                     Label("Rotate Right", systemImage: "rotate.right")
                 }
+                .keyboardShortcut("]", modifiers: [])
+                .help("Rotate the selected shape 15° clockwise (])")
+
                 Button(action: {
                     items[selectedItem].position = CGPoint(
                         x: canvasCenter.x - items[selectedItem].width / 2,
@@ -256,6 +272,8 @@ struct ContentView: View {
                 }) {
                     Label("Center", systemImage: "dot.viewfinder")
                 }
+                .keyboardShortcut("0", modifiers: [])
+                .help("Move the selected shape to the centre of the canvas (0)")
             }
             .padding()
         }
