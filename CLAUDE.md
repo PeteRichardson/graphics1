@@ -60,7 +60,15 @@ A single `DragGesture` on the `Canvas` handles all items; there are no per-item 
 - **Live preview** — a `@GestureState dragOffset` is added to a *copy* of the dragged item's position at draw time, so the drag is visible without mutating state; the offset resets automatically when the gesture ends. Only the item matching `draggedItem` gets the offset — applying it to every item is what used to make all of them move together.
 - **Commit + inertia** — `onEnded` writes the translation into `items[i].position` and calls `startInertia()`.
 
-Velocity is per-item (`Item.velocity`) and measured in `trackVelocity(_:)` by differencing each event's translation and timestamp against the previous one, with 0.7 exponential smoothing. Don't try to derive it from `value.time` alone. `startInertia()` runs a single 60 Hz `Timer` that advances *every* item with velocity — skipping whichever one is currently held — applying a 0.92-per-tick friction factor and zeroing each item once it drops below 0.5. The timer invalidates when nothing is moving.
+Velocity is per-item (`Item.velocity`) and measured in `trackVelocity(_:)` by differencing each event's translation and timestamp against the previous one, exponentially smoothed. Don't try to derive it from `value.time` alone.
+
+`startInertia()` runs a single `Timer` that advances *every* item with velocity, skipping whichever one is currently held, and invalidates itself when nothing is moving. Three details matter if you touch it:
+
+- **It integrates against measured elapsed time**, not a fixed step. `Timer` coalesces late fires rather than catching up, so assuming `1/60`s per tick made motion slow down whenever the main thread was busy. Distance is `velocity * dt`, and friction is `Inertia.decay(dt:)` rather than a flat per-tick multiply.
+- **The timer is registered in `.common` run-loop modes**, via `RunLoop.main.add(_:forMode:)` rather than `Timer.scheduledTimer`. A default-mode timer stops firing during a live window resize or while a menu is open, which froze coasting items mid-flight.
+- **`stopInertia()` is wired to `.onDisappear`**, since the timer's closure otherwise outlives the view that owns it.
+
+All tuning constants live on the `Inertia` enum (`friction`, `restThreshold`, `tickInterval`, `referenceRate`, `velocitySmoothing`) rather than as inline literals. `Inertia.decay(dt:)` is a pure function and is the one piece of the simulation currently covered by unit tests (`graphics1Tests/InertiaTests.swift`) — everything else still requires driving the UI.
 
 `selectedItem` still drives the button bar and has no visual affordance; there is no selection outline yet.
 

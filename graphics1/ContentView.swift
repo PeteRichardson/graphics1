@@ -5,7 +5,36 @@
 //  Created by Peter Richardson on 7/23/25.
 //
 
+import QuartzCore
 import SwiftUI
+
+/// Tuning constants and time-stepping maths for drag-release inertia.
+enum Inertia {
+    /// Nominal timer cadence. The step integrates against *measured* elapsed
+    /// time, so a late tick is corrected for rather than assumed away.
+    static let tickInterval: TimeInterval = 1.0 / 60.0
+
+    /// Ticks per second that `friction` was tuned against.
+    static let referenceRate: Double = 60
+
+    /// Fraction of an item's velocity retained per reference tick.
+    static let friction: CGFloat = 0.92
+
+    /// Below this speed, in points per second, an item is considered at rest.
+    static let restThreshold: CGFloat = 0.5
+
+    /// Weight given to the newest sample when smoothing drag velocity.
+    static let velocitySmoothing: CGFloat = 0.7
+
+    /// Fraction of velocity retained after `dt` seconds.
+    ///
+    /// `friction` is a per-tick figure, so it is raised to the number of
+    /// reference ticks `dt` actually covers. At exactly one tick this returns
+    /// `friction` unchanged, which is what preserves the original feel.
+    static func decay(dt: TimeInterval) -> CGFloat {
+        CGFloat(pow(Double(friction), dt * referenceRate))
+    }
+}
 
 extension Color {
     static func random() -> Color {
@@ -172,6 +201,7 @@ struct ContentView: View {
             }
             .frame(maxHeight: .infinity, alignment: .bottom)
         }
+        .onDisappear(perform: stopInertia)
     }
 
     /// Topmost item under `point`, or nil for empty canvas.
@@ -190,7 +220,7 @@ struct ContentView: View {
         let vx = (value.translation.width - lastTranslation.width) / dt
         let vy = (value.translation.height - lastTranslation.height) / dt
 
-        let smoothing = 0.7
+        let smoothing = Inertia.velocitySmoothing
         items[i].velocity.width = items[i].velocity.width * (1 - smoothing) + vx * smoothing
         items[i].velocity.height = items[i].velocity.height * (1 - smoothing) + vy * smoothing
 
@@ -201,22 +231,35 @@ struct ContentView: View {
     func startInertia() {
         guard inertiaTimer == nil else { return } // one timer coasts every moving item
 
-        inertiaTimer = Timer.scheduledTimer(withTimeInterval: 1.0 / 60.0, repeats: true) { timer in
+        var lastTick = CACurrentMediaTime()
+
+        let timer = Timer(timeInterval: Inertia.tickInterval, repeats: true) { timer in
+            // Integrate against real elapsed time. Timer coalesces late fires
+            // rather than catching up, so assuming a fixed step would make
+            // motion slow down whenever the main thread is busy.
+            let now = CACurrentMediaTime()
+            let dt = now - lastTick
+            lastTick = now
+            guard dt > 0 else { return }
+
+            let decay = Inertia.decay(dt: dt)
             var stillMoving = false
 
             for i in items.indices {
                 guard i != draggedItem else { continue } // a held item doesn't coast
 
-                // Move item based on its own velocity
-                items[i].position.x += items[i].velocity.width / 60
-                items[i].position.y += items[i].velocity.height / 60
+                // Velocity is points per second, so distance is velocity * dt
+                items[i].position.x += items[i].velocity.width * CGFloat(dt)
+                items[i].position.y += items[i].velocity.height * CGFloat(dt)
 
-                // Apply simple friction
-                items[i].velocity.width *= 0.92
-                items[i].velocity.height *= 0.92
+                // Apply simple friction, scaled to the time actually elapsed
+                items[i].velocity.width *= decay
+                items[i].velocity.height *= decay
 
                 // Stop if velocity is small
-                if abs(items[i].velocity.width) < 0.5, abs(items[i].velocity.height) < 0.5 {
+                if abs(items[i].velocity.width) < Inertia.restThreshold,
+                   abs(items[i].velocity.height) < Inertia.restThreshold
+                {
                     items[i].velocity = .zero
                 } else {
                     stillMoving = true
@@ -228,6 +271,19 @@ struct ContentView: View {
                 inertiaTimer = nil
             }
         }
+
+        // .common rather than the default mode: a default-mode timer stops
+        // firing while the run loop is tracking a live resize or an open menu,
+        // which froze coasting items mid-flight.
+        RunLoop.main.add(timer, forMode: .common)
+        inertiaTimer = timer
+    }
+
+    /// Stop the simulation when the view goes away — the timer's closure
+    /// otherwise outlives the view that owns it.
+    func stopInertia() {
+        inertiaTimer?.invalidate()
+        inertiaTimer = nil
     }
 }
 
