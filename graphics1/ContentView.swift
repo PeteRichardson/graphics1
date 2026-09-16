@@ -265,6 +265,7 @@ struct ContentView: View {
                 .help("Rotate the selected shape 15° clockwise (])")
 
                 Button(action: {
+                    items[selectedItem].velocity = .zero
                     items[selectedItem].position = CGPoint(
                         x: canvasCenter.x - items[selectedItem].width / 2,
                         y: canvasCenter.y - items[selectedItem].height / 2
