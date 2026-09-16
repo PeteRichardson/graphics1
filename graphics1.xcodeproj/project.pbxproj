@@ -29,9 +29,23 @@
 		C1AD9A5D2E31516D00CC1515 /* graphics1UITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = graphics1UITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		C14752D7305B2EBC0018F242 /* Exceptions for "graphics1" folder in "graphics1" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				docs/design.md,
+				docs/reviews/PROJECT_REVIEW.md,
+			);
+			target = C1AD9A442E31516C00CC1515 /* graphics1 */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		C1AD9A472E31516C00CC1515 /* graphics1 */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				C14752D7305B2EBC0018F242 /* Exceptions for "graphics1" folder in "graphics1" target */,
+			);
 			path = graphics1;
 			sourceTree = "<group>";
 		};
